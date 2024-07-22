@@ -20,7 +20,7 @@ templates = Jinja2Templates(directory="templates")
 
 
 
-#파일 업로드 관련dfdfdfdfdfdfdffffffffsdfsdfsdfsdfsdfdffffffffirst
+#파일 업로드 관련kcm again
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)   
