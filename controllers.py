@@ -38,7 +38,9 @@ router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 
+
 # 파일 업로드 관련kcm again gunkim kk
+develop
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
