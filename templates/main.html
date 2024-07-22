@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>메인 페이지</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container {
+            margin-top: 50px;
+            display: flex;
+            justify-content: center;
+            flex-direction: column;
+            align-items: center;
+        }
+        .btn-primary {
+            background-color: #555;
+            border-color: #555;
+        }
+        .btn-primary:hover {
+            background-color: #ced4da;
+            border-color: #ced4da;
+        }
+        .btn-block {
+            display: block;
+            width: 100%;
+            margin: 30px auto;
+        }
+    </style>
+</head>
+<body>
+    {% block content %} <!-- 추가 -->
+    <div class="container">
+        <h1>메인 페이지</h1>
+        <br/>
+        <h3>{{ username }}님이 로그인 중입니다.</h3>
+        <br/>
+        <div class="buttons">
+            <a href="/notices" class="btn btn-primary btn-block">공지사항 게시판</a>
+            <a href="/qnas" class="btn btn-primary btn-block">Q&A 게시판</a>
+            <form action="/logout" method="post" style="display: inline;">
+                <button type="submit" class="btn btn-danger btn-block">로그아웃</button>                
+            </form>
+        </div>
+    </div>
+    {% endblock %} <!-- 추가 -->
+</body>
+</html>
