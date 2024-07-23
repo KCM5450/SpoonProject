@@ -52,7 +52,7 @@ def basename(value):
 
 templates.env.filters["basename"] = basename
 
-
+#로그인화면이동
 @router.get('/home')
 async def read_root(request: Request):
     return templates.TemplateResponse('loginjoin/home.html', {"request": request})
@@ -87,6 +87,7 @@ async def signup(signup_data: UserCreate, db: Session = Depends(get_db)):
     return JSONResponse(
         status_code=200, content={"message": "회원가입이 성공했습니다.", "message_icon": "success", "url": "/login"}
     )
+
 
 
 
@@ -493,6 +494,16 @@ async def create_post(
     db.refresh(new_post)
     return RedirectResponse(url="/contact", status_code=303)
 
+# 카카오 지도 API
+@router.get("/search", response_class=HTMLResponse)
+async def get_search_page(request: Request):
+    return templates.TemplateResponse("contact/map.html", {"request": request, "keyword": ""})
+
+@router.post("/search", response_class=HTMLResponse)
+async def search_location(request: Request, keyword: str = Form(...)):
+    return templates.TemplateResponse("contact/map.html", {"request": request, "keyword": keyword})
+
+
 
 # 파일 다운로드 엔드포인트
 @router.get("/download/{file_name}")
@@ -529,3 +540,5 @@ async def websocket_endpoint(websocket: WebSocket, username: str):
     except WebSocketDisconnect:
         manager.disconnect(username)
         await manager.broadcast(f"{username} 사용자가 채팅에서 퇴장하였습니다.")
+        
+        
