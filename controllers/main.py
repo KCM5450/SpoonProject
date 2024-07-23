@@ -13,7 +13,6 @@ Base.metadata.create_all(bind=engine)
 
 
 app.include_router(router)
-app.include_router(creditreview)
 app.include_router(baro)
 
 templates = Jinja2Templates(directory="templates")
