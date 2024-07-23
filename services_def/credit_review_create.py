@@ -1,12 +1,8 @@
-# API KEY를 환경변수로 관리하기 위한 설정 파일
 from contextlib import contextmanager
 from dotenv import load_dotenv
 from langchain_teddynote import logging
-
 import os
 import pandas as pd
-import requests
-import zipfile
 import requests
 import zipfile
 import io
@@ -21,6 +17,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.chains.combine_documents.stuff import StuffDocumentsChain
 from sqlalchemy import Column, DateTime, Integer, String, Text
 from database import Base, SessionLocal
+from typing import List, Dict, Any
 
 # API KEY 정보로드
 load_dotenv()
@@ -37,9 +34,9 @@ class ReportContent(Base):
     __tablename__ = "report_content"
 
     report_num = Column(Integer, primary_key=True, autoincrement=True)
-    corp_code = Column(Integer)
+    corp_code = Column(String(24))
     corp_name = Column(String(32))
-    report_nm = Column(String(512))
+    report_nm = Column(String(100))
     rcept_no = Column(String(32))
     rcept_dt = Column(DateTime)
     report_content = Column(Text)
@@ -72,27 +69,21 @@ def get_report(corp_code):
     data = response.json()
     data_list = data.get("list")
     df_list = pd.DataFrame(data_list)
+    if df_list.empty:
+        raise ValueError(f"No data found for corporation code: {corp_code}")
 
-    # rcept_dt를 datetime 형식으로 변환
+    # rcept_dt를 datetime 형식으로 변환 및 최신건 추출
     df_list["rcept_dt"] = pd.to_datetime(df_list["rcept_dt"])
+    latest_report = df_list.sort_values("rcept_dt", ascending=False).iloc[0]
 
-    # 정렬 수행
-    df_list = df_list.sort_values(by="rcept_dt", ascending=False).reset_index(drop=True)
-    corp_name = df_list["corp_name"].iloc[0]
-    rcept_no = df_list["rcept_no"].iloc[0]
-    report_nm = df_list["report_nm"].iloc[0]
-    rcept_dt = df_list["rcept_dt"].iloc[0]
-
-    new_report = ReportContent(
+    return ReportContent(
         corp_code=corp_code,
-        corp_name=corp_name,
-        report_nm=report_nm,
-        rcept_no=rcept_no,
-        rcept_dt=rcept_dt,
+        corp_name=latest_report["corp_name"],
+        report_nm=latest_report["report_nm"],
+        rcept_no=latest_report["rcept_no"],
+        rcept_dt=latest_report["rcept_dt"],
         report_content="",
     )
-
-    return new_report
 
 
 def fetch_document(rcept_no):
@@ -181,8 +172,6 @@ def load_html_with_langchain(html_string):
         documents = loader.load()
         return documents
     finally:
-        import os
-
         os.unlink(temp_file_path)
 
 
@@ -194,7 +183,7 @@ map_template = """다음은 문서의 일부입니다:
 
 map_prompt = PromptTemplate.from_template(map_template)
 
-# LLM 모델 설정 (Claude 3.5 Sonnet 사용)
+# LLM 모델 설정 (gpt-4o-mini 사용)
 llm = ChatOpenAI(model="gpt-4o-mini-2024-07-18", temperature=0)
 map_chain = LLMChain(llm=llm, prompt=map_prompt)
 
@@ -202,7 +191,6 @@ map_chain = LLMChain(llm=llm, prompt=map_prompt)
 reduce_template = """
 당신은 은행에서 대출을 심사하는 역할입니다.
 당신은 대출 심사에 대한 판단 전에 신용평가보고서를 작성하고 있습니다.
-
 다음은 요약들의 집합입니다: {docs}
 이것들을 가져다가 최종적으로 통합하여 1.기업체개요 2.산업분석 3.영업현황 및 수익구조 4.재무구조 및 현금흐름 5.신용등급 부여의견으로 구분해서 요약해주세요.
 각 섹션에 관련 재무 수치를 포함시키고 다섯줄 이상 작성해 주세요.
