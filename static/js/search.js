@@ -9,7 +9,7 @@ function searchCorp() {
                 resultDiv.innerHTML = `<p>${data.error}</p>`;
             } else {
                 // Assuming data.corp_info is the data you need
-                resultDiv.innerHTML = `
+                resultDiv.innerHTML = `<br>
                     <p>Corp Code: ${data.corp_code}</p>
                 `;
             }
