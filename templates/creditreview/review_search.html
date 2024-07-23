@@ -1,18 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>스푼</title>
-</head>
-<body>
-    <header>
-        헤더
-    </header>
-        <span>AI심사보고서>업체검색</span>
+{% extends "base.html" %}
+
+{% block title %}AI심사보고서{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="/static/css/style.css">
+{% endblock %}
+
+{% block content %}
+
+        <span>AI심사보고서&gt;업체검색</span>
         <h1>심사보고서 업체 검색</h1>
-    <footer>
-        푸터
-    </footer>
-</body>
-</html>
+        <form method="get" action="/creditreview/detail">
+            <input name="company_name" placeholder = "회사명 입력">
+            <input type="submit" value="검색">
+        </form>
+        
+
+{% endblock %}
