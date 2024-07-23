@@ -1,12 +1,10 @@
 {% extends "base.html" %}
-
 {% block title %}회원가입{% endblock %}
-
 {% block head %}
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/loginjoin.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 {% endblock %}
-
 {% block content %}
 <div class="home-container">
     <div class="home-content">
@@ -26,7 +24,7 @@
                     <label for="signup_email">이메일:</label>
                     <input type="email" id="signup_email" name="email" required>
                 </div>
-                <div class="home-form-group"> 
+                <div class="home-form-group">
                     <label for="signup_password">비밀번호:</label>
                     <input type="password" id="signup_password" name="password" required>
                 </div>
@@ -38,7 +36,6 @@
         </div>
     </div>
 </div>
-
 <script>
     function submitSignupForm(event) {
         event.preventDefault();
@@ -55,19 +52,28 @@
             },
             body: JSON.stringify(data)
         })
-            .then(response => response.json().then(body => ({ status: response.status, body: body })))
-            .then(result => {
-                if (result.status === 200) {
-                    alert(result.body.message);
-                    window.location.href = '/';
-                } else {
-                    throw new Error(result.body.detail || '회원가입을 실패했습니다.');
+        .then(response => response.json())
+        .then(result => {
+            Swal.fire({
+                title: result.message,
+                icon: result.message_icon,
+                showConfirmButton: false,
+                timer: 1500
+            }).then(() => {
+                if (result.url) {
+                    window.location.href = result.url;
                 }
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-                alert(error.message);
             });
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            Swal.fire({
+                title: '회원가입 중 오류가 발생했습니다.',
+                icon: 'error',
+                showConfirmButton: false,
+                timer: 1500
+            });
+        });
     }
 </script>
 {% endblock %}
