@@ -20,9 +20,9 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, HTMLResponse
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
-from models import Contact, Post, User, Notice, Qna, Reply
-from dependencies import get_db, get_password_hash, verify_password
-from schemas import (
+from models.common_models import Contact, Post, User, Notice, Qna, Reply
+from services_def.dependencies import get_db, get_password_hash, verify_password
+from schemas.common_schemas import (
     UserCreate,
     NoticeCreate,
     NoticeUpdate,
@@ -30,8 +30,8 @@ from schemas import (
     QnaUpdate,
     ContactForm,
 )
-from email_utils import send_email
-from connection_manager import manager
+from services_def.email_utils import send_email
+from services_def.connection_manager import manager
 import urllib.parse
 
 router = APIRouter()
@@ -53,10 +53,14 @@ def basename(value):
 templates.env.filters["basename"] = basename
 
 
+@router.get('/home')
+async def read_root(request: Request):
+    return templates.TemplateResponse('loginjoin/home.html', {"request": request})
+
 # 회원 가입 페이지
 @router.get("/join")
 async def read_join(request: Request):
-    return templates.TemplateResponse("join.html", {"request": request})
+    return templates.TemplateResponse("loginjoin/join.html", {"request": request})
 
 # 회원 가입
 @router.post("/signup")
@@ -89,7 +93,7 @@ async def signup(signup_data: UserCreate, db: Session = Depends(get_db)):
 # 로그인
 @router.get("/login")
 async def login_form(request: Request):
-    return templates.TemplateResponse("home.html", {"request": request})
+    return templates.TemplateResponse("loginjoin/home.html", {"request": request})
 
 
 @router.post("/login")
@@ -103,7 +107,7 @@ async def login(
     if user and verify_password(password, user.hashed_password):
         request.session["username"] = user.username
         response = templates.TemplateResponse(
-            "home.html",
+            "loginjoin/home.html",
             {"request": request, "message": "로그인이 성공했습니다.", "message_icon": "success", "url": "/"},
         )
         encoded_username = urllib.parse.quote(request.session["username"])  # URL 인코딩
@@ -111,7 +115,7 @@ async def login(
         return response
     else:
         response = templates.TemplateResponse(
-            "home.html",
+            "loginjoin/home.html",
             {"request": request, "message": "로그인이 실패했습니다.", "url": "home"},
         )
         return response
@@ -122,22 +126,11 @@ async def login(
 async def logout(request: Request):
     request.session.pop("username", None)
     response = templates.TemplateResponse(
-        "home.html",
+        "loginjoin/home.html",
         {"request": request, "message": "로그아웃되었습니다.", "message_icon": "success", "url": "/"},
     )
     response.delete_cookie("session")
     return response
-
-
-# 메인 페이지
-@router.get("/main")
-async def main_page(request: Request, db: Session = Depends(get_db)):
-    username = request.session.get("username")
-    if username is None:
-        return RedirectResponse(url="/")
-    return templates.TemplateResponse(
-        "main.html", {"request": request, "username": username}
-    )
 
 
 # 공지사항 목록 조회
@@ -146,7 +139,7 @@ async def list_notices(request: Request, db: Session = Depends(get_db)):
     username = request.session.get("username")
     notices = db.query(Notice).all()
     return templates.TemplateResponse(
-        "notice.html", {"request": request, "notices": notices, "username": username}
+        "notice/notice.html", {"request": request, "notices": notices, "username": username}
     )
 
 
@@ -177,7 +170,7 @@ async def search_notices(
     else:
         notices = db.query(Notice).all()
     return templates.TemplateResponse(
-        "notice.html", {"request": request, "notices": notices, "username": username}
+        "notice/notice.html", {"request": request, "notices": notices, "username": username}
     )
 
 
@@ -188,7 +181,7 @@ async def create_notice_page(request: Request):
     if username != "admin":
         raise HTTPException(status_code=403, detail="권한이 없습니다.")
     return templates.TemplateResponse(
-        "notice_create.html", {"request": request, "username": username}
+        "notice/notice_create.html", {"request": request, "username": username}
     )
 
 
@@ -228,7 +221,7 @@ async def update_notice_page(
     if not notice:
         raise HTTPException(status_code=404, detail="공지사항을 찾을 수 없습니다.")
     return templates.TemplateResponse(
-        "notice_update.html",
+        "notice/notice_update.html",
         {"request": request, "notice": notice, "username": username},
     )
 
@@ -283,7 +276,7 @@ async def get_notice_detail(
         raise HTTPException(status_code=404, detail="공지사항을 찾을 수 없습니다.")
     username = request.session.get("username")
     return templates.TemplateResponse(
-        "notice_detail.html",
+        "notice/notice_detail.html",
         {"request": request, "notice": notice, "username": username},
     )
 
@@ -294,7 +287,7 @@ async def list_qnas(request: Request, db: Session = Depends(get_db)):
     username = request.session.get("username")
     qnas = db.query(Qna).all()
     return templates.TemplateResponse(
-        "qna.html", {"request": request, "qnas": qnas, "username": username}
+        "qna/qna.html", {"request": request, "qnas": qnas, "username": username}
     )
 
 
@@ -324,7 +317,7 @@ async def search_qnas(
     else:
         qnas = db.query(Qna).all()
     return templates.TemplateResponse(
-        "qna.html", {"request": request, "qnas": qnas, "username": username}
+        "qna/qna.html", {"request": request, "qnas": qnas, "username": username}
     )
 
 
@@ -335,7 +328,7 @@ async def create_qna_page(request: Request):
     if not username:
         raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
     return templates.TemplateResponse(
-        "qna_create.html", {"request": request, "username": username}
+        "qna/qna_create.html", {"request": request, "username": username}
     )
 
 
@@ -365,7 +358,7 @@ async def update_qna_page(request: Request, qna_id: int, db: Session = Depends(g
     if not qna:
         raise HTTPException(status_code=404, detail="Q&A를 찾을 수 없습니다.")
     return templates.TemplateResponse(
-        "qna_update.html", {"request": request, "qna": qna, "username": username}
+        "qna/qna_update.html", {"request": request, "qna": qna, "username": username}
     )
 
 
@@ -410,7 +403,7 @@ async def qna_detail(qna_id: int, request: Request, db: Session = Depends(get_db
     replies = db.query(Reply).filter(Reply.qna_id == qna_id).all()
     username = request.session.get("username")
     return templates.TemplateResponse(
-        "qna_detail.html",
+        "qna/qna_detail.html",
         {"request": request, "qna": qna, "replies": replies, "username": username},
     )
 
@@ -441,7 +434,7 @@ async def create_reply(
 async def read_contact(request: Request):
     username = request.session.get("username")
     return templates.TemplateResponse(
-        "contact2.html", {"request": request, "username": username}
+        "contact/contact2.html", {"request": request, "username": username}
     )
 
 
@@ -462,7 +455,7 @@ async def submit_contact_form(
         f"Name: {name}\nEmail: {email}\nMessage: {message}",
     )
     return templates.TemplateResponse(
-        "contact2.html",
+        "contact/contact2.html",
         {"request": request, "message": "Contact form submitted successfully"},
     )
 
@@ -473,7 +466,7 @@ async def create_post_page(request: Request, db: Session = Depends(get_db)):
     posts = db.query(Post).all()
     username = request.session.get("username")
     return templates.TemplateResponse(
-        "contact.html", {"request": request, "posts": posts, "username": username}
+        "contact/contact.html", {"request": request, "posts": posts, "username": username}
     )
 
 
@@ -515,7 +508,7 @@ async def download_file(file_name: str):
 async def get_chat_page(request: Request):
     username = request.session.get("username")
     return templates.TemplateResponse(
-        "contact3.html", {"request": request, "username": username}
+        "contact/contact3.html", {"request": request, "username": username}
     )
 
 
