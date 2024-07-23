@@ -17,7 +17,7 @@ from fastapi import (
     WebSocketDisconnect,
 )
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import FileResponse, RedirectResponse, HTMLResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, HTMLResponse
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from models import Contact, Post, User, Notice, Qna, Reply
@@ -39,8 +39,8 @@ templates = Jinja2Templates(directory="templates")
 
 
 
-# 파일 업로드 관련kcm again gunkim kk
-develop
+# 파일 업로드 관련
+
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
@@ -58,14 +58,13 @@ templates.env.filters["basename"] = basename
 async def read_join(request: Request):
     return templates.TemplateResponse("join.html", {"request": request})
 
-
 # 회원 가입
 @router.post("/signup")
 async def signup(signup_data: UserCreate, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.username == signup_data.username).first()
     if existing_user:
-        raise HTTPException(
-            status_code=400, detail="이미 동일 사용자 이름이 가입되어 있습니다."
+        return JSONResponse(
+            status_code=400, content={"message": "이미 동일 사용자 이름이 가입되어 있습니다.", "message_icon": "error"}
         )
     hashed_password = get_password_hash(signup_data.password)
     new_user = User(
@@ -77,12 +76,14 @@ async def signup(signup_data: UserCreate, db: Session = Depends(get_db)):
     try:
         db.commit()
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail="회원가입이 실패했습니다. 기입한 내용을 확인해보세요.",
+        return JSONResponse(
+            status_code=500, content={"message": "회원가입이 실패했습니다. 기입한 내용을 확인해보세요.", "message_icon": "error"}
         )
     db.refresh(new_user)
-    return {"message": "회원가입이 성공했습니다."}
+    return JSONResponse(
+        status_code=200, content={"message": "회원가입이 성공했습니다.", "message_icon": "success", "url": "/login"}
+    )
+
 
 
 # 로그인
@@ -102,15 +103,15 @@ async def login(
     if user and verify_password(password, user.hashed_password):
         request.session["username"] = user.username
         response = templates.TemplateResponse(
-            "redirect.html",
-            {"request": request, "message": "로그인이 성공했습니다.", "url": "/"},
+            "home.html",
+            {"request": request, "message": "로그인이 성공했습니다.", "message_icon": "success", "url": "/"},
         )
         encoded_username = urllib.parse.quote(request.session["username"])  # URL 인코딩
         response.set_cookie(key="session", value=encoded_username)
         return response
     else:
         response = templates.TemplateResponse(
-            "redirect.html",
+            "home.html",
             {"request": request, "message": "로그인이 실패했습니다.", "url": "home"},
         )
         return response
@@ -121,8 +122,8 @@ async def login(
 async def logout(request: Request):
     request.session.pop("username", None)
     response = templates.TemplateResponse(
-        "redirect.html",
-        {"request": request, "message": "로그아웃되었습니다.", "url": "/"},
+        "home.html",
+        {"request": request, "message": "로그아웃되었습니다.", "message_icon": "success", "url": "/"},
     )
     response.delete_cookie("session")
     return response
