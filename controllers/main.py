@@ -26,11 +26,5 @@ async def read_root(request: Request):
     username = request.session.get("username")
     return templates.TemplateResponse('index.html', {"request": request, "username": username})
 
-@app.get('/home')
-async def read_root(request: Request):
-    return templates.TemplateResponse('home.html', {"request": request})
 
-@app.get('/base')
-async def read_root(request: Request):
-    return templates.TemplateResponse('base.html', {"request": request})
 
