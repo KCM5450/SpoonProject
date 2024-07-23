@@ -2,7 +2,8 @@ from fastapi import FastAPI, Request
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.templating import Jinja2Templates
 from database import Base, engine
-from controllers import router
+from controllers.common_controllers import router
+from controllers.baro_controllers import baro
 from fastapi.staticfiles import StaticFiles
 from creditcontroller import creditreview
 
@@ -13,6 +14,7 @@ Base.metadata.create_all(bind=engine)
 
 app.include_router(router)
 app.include_router(creditreview)
+app.include_router(baro)
 
 templates = Jinja2Templates(directory="templates")
 
@@ -29,13 +31,3 @@ async def read_root(request: Request):
     return templates.TemplateResponse(
         "index.html", {"request": request, "username": username}
     )
-
-
-@app.get("/home")
-async def read_root(request: Request):
-    return templates.TemplateResponse("home.html", {"request": request})
-
-
-@app.get("/base")
-async def read_root(request: Request):
-    return templates.TemplateResponse("base.html", {"request": request})
